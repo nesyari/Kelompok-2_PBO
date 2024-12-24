@@ -195,3 +195,106 @@ for i in range(2):
     ground = Ground(GROUND_WIDHT * i)
     ground_group.add(ground)
     
+ground_group = pygame.sprite.Group()
+for i in range(2):
+    ground = Ground(GROUND_WIDTH * i)
+    ground_group.add(ground)
+
+pipe_group = pygame.sprite.Group()
+for i in range(2):
+    pipes = get_random_pipes(SCREEN_WIDTH * i + 800, selected_mode)
+    pipe_group.add(pipes[0])
+    pipe_group.add(pipes[1])
+
+# Initialize score variable
+score = 0
+font = pygame.font.Font(None, 36)  # Create a font object for rendering the score
+
+clock = pygame.time.Clock()
+begin = True
+
+while begin:
+    clock.tick(15)
+
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+        if event.type == KEYDOWN:
+            if event.key == K_SPACE or event.key == K_UP:
+                bird.bump()
+                pygame.mixer.music.load(wing)
+                pygame.mixer.music.play()
+                begin = False
+
+    screen.blit(BACKGROUND, (0, 0))
+    screen.blit(BEGIN_IMAGE, (120, 150))
+
+    if is_off_screen(ground_group.sprites()[0]):
+        ground_group.remove(ground_group.sprites()[0])
+        new_ground = Ground(GROUND_WIDTH - 20)
+        ground_group.add(new_ground)
+
+    bird.begin()
+    ground_group.update()
+
+    bird_group.draw(screen)
+    ground_group.draw(screen)
+
+    pygame.display.update()
+
+while True:
+    clock.tick(15)
+
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+        if event.type == KEYDOWN:
+            if event.key == K_SPACE or event.key == K_UP:
+                bird.bump()
+                pygame.mixer.music.load(wing)
+                pygame.mixer.music.play()
+
+    screen.blit(BACKGROUND, (0, 0))
+
+    if is_off_screen(ground_group.sprites()[0]):
+        ground_group.remove(ground_group.sprites()[0])
+        new_ground = Ground(GROUND_WIDTH - 20)
+        ground_group.add(new_ground)
+
+    if is_off_screen(pipe_group.sprites()[0]):
+        pipe_group.remove(pipe_group.sprites()[0])
+        pipe_group.remove(pipe_group.sprites()[0])
+        pipes = get_random_pipes(SCREEN_WIDTH * 2, selected_mode)
+        pipe_group.add(pipes[0])
+        pipe_group.add(pipes[1])
+
+    bird_group.update()
+    ground_group.update()
+    pipe_group.update()
+
+    # Check for scoring
+    for pipe in pipe_group:
+        if pipe.rect[0] + PIPE_WIDTH < bird.rect[0] and not pipe.passed:
+            score += 1
+            pipe.passed = True  # Mark this pipe as passed
+
+    bird_group.draw(screen)
+    pipe_group.draw(screen)
+    ground_group.draw(screen)
+
+    # Render the score
+    score_text = font.render(f'Score: {score}', True, (255, 255, 255))
+    screen.blit(score_text, (10, 10))  # Display score at the top left corner
+
+    pygame.display.update()
+
+    if (pygame.sprite.groupcollide(bird_group, ground_group, False, False, pygame.sprite.collide_mask) or
+            pygame.sprite.groupcollide(bird_group, pipe_group, False, False, pygame.sprite.collide_mask)):
+        pygame.mixer.music.load(hit)
+        pygame.mixer.music.play()
+
+        # Display Game Over screen
+        screen.blit(GAME_OVER_IMAGE, game_over_rect.topleft)
+        pygame.display.update()
+        time.sleep(1)
+        break
